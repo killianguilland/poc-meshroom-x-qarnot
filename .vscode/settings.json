@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "/Users/akingram/.local/share/virtualenvs/meshroom-poc-cXryMLdH/bin/python",
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.analysis.extraPaths": [
+        "/Users/akingram/.local/share/virtualenvs/meshroom-poc-cXryMLdH/lib/python3.11/site-packages"
+    ]
+}
