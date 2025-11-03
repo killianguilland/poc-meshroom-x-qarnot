@@ -3,6 +3,7 @@ import sys
 import qarnot
 from datetime import datetime
 import argparse
+from dotenv import load_dotenv
 
 """Create and run a qarnot docker-batch task using a token from the
 environment. This avoids committing secrets to source control.
@@ -11,25 +12,25 @@ Set QARNOT_TOKEN in your environment (or use a local `.env` file when
 developing).
 """
 
-def main(open_ssh=False):
+def main(open_ssh=False, list_available_constraints=False):
+	load_dotenv()
+	
 	token = os.environ.get("QARNOT_TOKEN")
-	# If not set in the environment, try to load a local .env file (optional)
-	if not token:
-		try:
-			# python-dotenv is optional; if present, load .env from the workspace root
-			from dotenv import load_dotenv
-			load_dotenv()
-			token = os.environ.get("QARNOT_TOKEN")
-		except Exception:
-			# ignore import/load errors and fall through to the error below
-			pass
 
 	if not token:
 		print("ERROR: environment variable QARNOT_TOKEN is not set.", file=sys.stderr)
 		print("Export QARNOT_TOKEN or create a .env file with QARNOT_TOKEN=value before running.", file=sys.stderr)
 		sys.exit(2)
 
+	# CONNECTION SETUP
+
 	conn = qarnot.connection.Connection(client_token=token)
+	if list_available_constraints:
+		for hwc in conn.all_hardware_constraints():
+			print(hwc.to_json())
+		return
+
+	# TASK SETUP 
 	profile = "docker-network-ssh" if open_ssh else "docker-batch"
 	task = conn.create_task("meshroom-test", profile, 1)
 
@@ -41,13 +42,6 @@ def main(open_ssh=False):
 		print("Created input bucket.")
 
 	task.resources.append(input_bucket)
-
-	try:
-		output_bucket = conn.retrieve_bucket("meshroom-out")
-		print("Found output bucket.")
-	except qarnot.exceptions.BucketStorageUnavailableException as e:
-		output_bucket = conn.create_bucket("meshroom-out")
-		print("Created output bucket.")
 
 	task.results = output_bucket
 
@@ -63,13 +57,25 @@ def main(open_ssh=False):
 	else:
 		task.constants['DOCKER_CMD'] = "/usr/local/bin/meshroom_batch --input /full --output /output"
 
+	# BUCKET CONNECTION
+	try:
+		output_bucket = conn.retrieve_bucket("meshroom-out")
+		print("Found output bucket.")
+	except qarnot.exceptions.BucketStorageUnavailableException as e:
+		output_bucket = conn.create_bucket("meshroom-out")
+		print("Created output bucket.")
+
+	# TASK START
 	task.submit()
+
+	# MONITORING LOOP
 	last_state = ''
 	done = False
 	ssh_has_started = False
 
 	while not done:
 
+		# OUTPUT HANDLING
 		_latest_out = task.fresh_stdout()
 		if _latest_out:
 			print(_latest_out)
@@ -91,7 +97,7 @@ def main(open_ssh=False):
 			print("Current CPU usage : {:.2f} %".format(cpu))
 			print("Current memory usage : {:.2f} MB".format(memory))
 
-
+			# SSH STARTUP (OPTIONAL)
 			forward_list = task.status.running_instances_info.per_running_instance_info[0].active_forward
 			if open_ssh and not ssh_has_started and len(forward_list) != 0:
 				ssh_forward_port = forward_list[0].forwarder_port
@@ -100,7 +106,7 @@ def main(open_ssh=False):
 				cmd = f"ssh -o StrictHostKeyChecking=no root@{ssh_forward_host} -p {ssh_forward_port}"
 				print(cmd)
 				ssh_has_started = True
-	
+
 		# Display errors on failure
 		if task.state == 'Failure':
 			print("** Errors: %s" % task.errors[0])
@@ -116,6 +122,11 @@ if __name__ == "__main__":
 		action="store_true",
 		help="If included, open an SSH connection to the running task when available",
 	)
+	parser.add_argument(
+		"--list-constraints",
+		action="store_true",
+		help="If included, list all available hardware constraints",
+	)
 	args = parser.parse_args()
 
-	main(open_ssh=args.ssh)
+	main(list_available_constraints=args.list_constraints, open_ssh=args.ssh)

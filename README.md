@@ -34,10 +34,16 @@ Setup with pipenv:
 
 ## Usage
 
+Enter the pipenv shell:
+
+```bash
+pipenv shell
+```
+
 Run the script inside the pipenv environment:
 
 ```bash
-pipenv run python task.py
+python task.py
 ```
 
 You can also just run it yourself using ssh if you set the SSH_PUBLIC_KEY environment variable.
@@ -46,5 +52,25 @@ You will have to run meshroom_batch manually after connecting.
 Add the --ssh flag to the script execution:
 
 ```bash
-pipenv run python task.py --ssh
+python task.py --ssh
+```
+
+You can list available hardware constraints with the --list-constraints flag:
+
+```bash
+python task.py --list-constraints
+```
+
+This will output something like:
+
+```json
+{'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 32000.0}
+{'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 128000.0}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '8c-32g-amd-rz3700x'}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '16c-128g-amd-tr2950x-ssd'}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '28c-128g-intel-dual-xeon2680v4-ssd'}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 8}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 16}
+{'discriminator': 'SSDHardwareConstraint'}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 28}
 ```
