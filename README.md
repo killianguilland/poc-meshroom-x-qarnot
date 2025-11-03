@@ -34,13 +34,14 @@ Setup with pipenv:
 
 ## Usage
 
-Enter the pipenv shell:
+Enter the pipenv virtual environment:
 
 ```bash
 pipenv shell
 ```
 
-Run the script inside the pipenv environment:
+Run the script to start a meshroom_batch task:
+This will use the images in the `in` folder, run a standard photogrammetry pipeline, and output the result to the `out` folder.
 
 ```bash
 python task.py
@@ -63,7 +64,7 @@ python task.py --list-constraints
 
 This will output something like:
 
-```json
+```js
 {'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 32000.0}
 {'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 128000.0}
 {'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '8c-32g-amd-rz3700x'}
