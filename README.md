@@ -1,6 +1,6 @@
-# meshroom-poc
+# poc-meshroom-x-qarnot
 
-Small proof-of-concept that runs a meshroom_batch command inside a Qarnot task running the meshroom docker image.
+> Small proof-of-concept that runs a meshroom_batch command inside a Qarnot task running the meshroom docker image.
 
 ## Installation
 
@@ -41,6 +41,8 @@ pipenv run python task.py
 ```
 
 You can also just run it yourself using ssh if you set the SSH_PUBLIC_KEY environment variable.
+Note that this replaces the normal meshroom_batch command with an ssh server inside the container.
+You will have to run meshroom_batch manually after connecting.
 Add the --ssh flag to the script execution:
 
 ```bash

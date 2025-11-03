@@ -2,6 +2,7 @@ import os
 import sys
 import qarnot
 from datetime import datetime
+import argparse
 
 """Create and run a qarnot docker-batch task using a token from the
 environment. This avoids committing secrets to source control.
@@ -10,15 +11,7 @@ Set QARNOT_TOKEN in your environment (or use a local `.env` file when
 developing).
 """
 
-# enable colors only when output is a tty (e.g. mac Terminal or iTerm2 running zsh)
-if sys.stdout.isatty() and os.environ.get("TERM", "") != "dumb":
-	RED = "\033[31m"
-	RESET = "\033[0m"
-else:
-	RED = ""
-	RESET = ""
-
-def main():
+def main(open_ssh=False):
 	token = os.environ.get("QARNOT_TOKEN")
 	# If not set in the environment, try to load a local .env file (optional)
 	if not token:
@@ -37,7 +30,8 @@ def main():
 		sys.exit(2)
 
 	conn = qarnot.connection.Connection(client_token=token)
-	task = conn.create_task("meshroom-test", "docker-network-ssh", 1)
+	profile = "docker-network-ssh" if open_ssh else "docker-batch"
+	task = conn.create_task("meshroom-test", profile, 1)
 
 	try:
 		input_bucket = conn.retrieve_bucket("meshroom-in")
@@ -59,20 +53,20 @@ def main():
 
 	DOCKER_SSH = os.environ.get("SSH_PUBLIC_KEY")
 
-	# task.constants['DOCKER_IMAGE'] = 'alpine:latest'
 	task.constants["DOCKER_REPO"] = "alicevision/meshroom"
 	task.constants["DOCKER_TAG"] = "2025.1.0-av3.3.0-ubuntu22.04-cuda12.1.1"
-	# task.constants["DOCKER_CMD"] = "/usr/local/bin/meshroom_batch --input /full --output /output"
-	task.constants['DOCKER_CMD'] = "/bin/bash -c 'mkdir -p ~/.ssh /run/sshd ;" \
-                               "echo \"${DOCKER_SSH}\" >> ~/.ssh/authorized_keys ;" \
-                               "/usr/sbin/sshd -D'"
-	task.constants['DOCKER_SSH'] = DOCKER_SSH
-	#task.run()
-	#print(task.stdout())
+	if open_ssh:
+		task.constants['DOCKER_CMD'] = "/bin/bash -c 'mkdir -p ~/.ssh /run/sshd ;" \
+								"echo \"${DOCKER_SSH}\" >> ~/.ssh/authorized_keys ;" \
+								"/usr/sbin/sshd -D'"
+		task.constants['DOCKER_SSH'] = DOCKER_SSH
+	else:
+		task.constants['DOCKER_CMD'] = "/usr/local/bin/meshroom_batch --input /full --output /output"
 
 	task.submit()
 	last_state = ''
 	done = False
+	ssh_has_started = False
 
 	while not done:
 
@@ -82,36 +76,46 @@ def main():
 		
 		_latest_err = task.fresh_stderr()
 		if _latest_err:
-			for line in _latest_err.rstrip('\n').splitlines():
-				print(f"{RED}{line}{RESET}")
+			print(_latest_err, file=sys.stderr)
 		
 		if task.state != last_state:
 			last_state = task.state
 			print("** {}".format(last_state))
 
 		if task.state == 'FullyExecuting':
-			# instance_info = task.status.running_instances_info.per_running_instance_info[0]
-			# cpu = instance_info.cpu_usage
-			# memory = instance_info.current_memory_mb
-			# print("\n*******************************\n")
-			# print('Current Timestamp : ', datetime.now())
-			# print("Current CPU usage : {:.2f} %".format(cpu))
-			# print("Current memory usage : {:.2f} MB".format(memory))
+			instance_info = task.status.running_instances_info.per_running_instance_info[0]
+			cpu = instance_info.cpu_usage
+			memory = instance_info.current_memory_mb
+			print("\n*******************************\n")
+			print('Current Timestamp : ', datetime.now())
+			print("Current CPU usage : {:.2f} %".format(cpu))
+			print("Current memory usage : {:.2f} MB".format(memory))
+
+
 			forward_list = task.status.running_instances_info.per_running_instance_info[0].active_forward
-			if not done and len(forward_list) != 0:
+			if open_ssh and not ssh_has_started and len(forward_list) != 0:
 				ssh_forward_port = forward_list[0].forwarder_port
 				ssh_forward_host = forward_list[0].forwarder_host
+				print("SSH is available ! Connect using this command :")
 				cmd = f"ssh -o StrictHostKeyChecking=no root@{ssh_forward_host} -p {ssh_forward_port}"
 				print(cmd)
-				done = True
+				ssh_has_started = True
 	
 		# Display errors on failure
 		if task.state == 'Failure':
 			print("** Errors: %s" % task.errors[0])
 			done = True
 
-		# done = task.wait(10)
+		done = task.wait(10)
 
 
 if __name__ == "__main__":
-	main()
+	parser = argparse.ArgumentParser(description="Run qarnot meshroom task")
+	parser.add_argument(
+		"--ssh",
+		action="store_true",
+		help="If included, open an SSH connection to the running task when available",
+	)
+	args = parser.parse_args()
+
+	main(open_ssh=args.ssh)
