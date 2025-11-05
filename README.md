@@ -33,36 +33,63 @@ Setup with pipenv:
    ```
 
 ## Usage
-
 Enter the pipenv virtual environment:
 
 ```bash
 pipenv shell
 ```
 
-Run the script to start a meshroom_batch task:
-This will use the images in the `in` folder, run a standard photogrammetry pipeline, and output the result to the `out` folder.
+Available actions (mutually exclusive; only one action is performed per run):
 
-```bash
-python task.py
+- Start the photogrammetry task:
+   Process a subfolder inside `/in` and write results to `/out`:
+
+   ```bash
+   python task.py --meshroom-task SUBFOLDER_NAME
+   ```
+
+   Example: process images in `/in/my_scan`:
+
+   ```bash
+   python task.py --meshroom-task my_scan
+   ```
+
+- Open an SSH connection to the running task:
+   If you set SSH_PUBLIC_KEY, this opens an SSH session into the container so you can run meshroom_batch manually:
+
+   ```bash
+   python task.py --ssh
+   ```
+
+- Sync a local folder with the corresponding bucket:
+   Sync either the `in` or `out` folder with the remote bucket:
+
+   ```bash
+   python task.py --sync-folder in
+   python task.py --sync-folder out
+   ```
+
+- List available hardware constraints:
+
+   ```bash
+   python task.py --list-constraints
+   ```
+
+If you run the script without any of the above flags it will print "No action specified. Use --help for usage information."
+
+Example output for --list-constraints might look like:
+
+```js
+{'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 32000.0}
+{'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 128000.0}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '8c-32g-amd-rz3700x'}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '16c-128g-amd-tr2950x-ssd'}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '28c-128g-intel-dual-xeon2680v4-ssd'}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 8}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 16}
+{'discriminator': 'SSDHardwareConstraint'}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 28}
 ```
-
-You can also just run it yourself using ssh if you set the SSH_PUBLIC_KEY environment variable.
-Note that this replaces the normal meshroom_batch command with an ssh server inside the container.
-You will have to run meshroom_batch manually after connecting.
-Add the --ssh flag to the script execution:
-
-```bash
-python task.py --ssh
-```
-
-You can list available hardware constraints with the --list-constraints flag:
-
-```bash
-python task.py --list-constraints
-```
-
-This will output something like:
 
 ```js
 {'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 32000.0}
