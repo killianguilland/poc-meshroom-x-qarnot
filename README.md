@@ -4,7 +4,7 @@
 
 ## Installation
 
-Setup with pipenv:
+Setup with pipenv virtual environment (you can also use plain pip and a virtualenv if you prefer):
 
 1. Install pipenv if you don't have it:
 
@@ -33,60 +33,72 @@ Setup with pipenv:
    ```
 
 ## Usage
-Enter the pipenv virtual environment:
+
+(If you used pipenv) enter the virtual environment before running the commands below:
 
 ```bash
 pipenv shell
 ```
 
-Available actions (mutually exclusive; only one action is performed per run):
+Here are the available actions (mutually exclusive; only one action is performed per run):
 
-- Start the photogrammetry task:
-   Process a subfolder inside `/in` and write results to `/out`:
+> [!TIP]
+> If you run the script without any of the following flags, it will print "No action specified. Use --help for usage information.
 
-   ```bash
-   python poc.py --meshroom-task SUBFOLDER_NAME
-   ```
+**Start the photogrammetry task**
+Process a subfolder inside `/in` and write results to `/out`:
 
-   Example: process images in `/in/my_scan`:
+```bash
+python poc.py --meshroom-task <subfolder>
+```
 
-   ```bash
-   python poc.py --meshroom-task my_scan
-   ```
+Example: process images for the default monstree sample:
 
-- Open an SSH connection to the running task:
-   If you set SSH_PUBLIC_KEY, this opens an SSH session into the container so you can run meshroom_batch manually:
+```bash
+python poc.py --meshroom-task monstree
+```
 
-   ```bash
-   python poc.py --ssh
-   ```
+**Create a new task with SSH access**
+If you set SSH_PUBLIC_KEY, this opens an SSH session into the container so you can run meshroom_batch manually:
 
-- Sync a local folder with the corresponding bucket:
-   Sync either the `in` or `out` folder with the remote bucket:
+```bash
+python poc.py --ssh
+```
+> [!TIP]
+> Be aware that this wont run the photogrammetry task automatically, you have to run meshroom_batch yourself once inside the container.
 
-   ```bash
-   python poc.py --sync-folder in
-   python poc.py --sync-folder out
-   ```
+**Upload pictures / download results**
+Sync either the `in` or `out` folder with the remote bucket:
+You should run this command before starting a task to upload input data, and after the task is finished to download results.
 
-- List available hardware constraints:
+```bash
+python poc.py --sync-folder in
+python poc.py --sync-folder out
+```
 
-   ```bash
-   python poc.py --list-constraints
-   ```
-   
-   Example output for --list-constraints might look like:
+> [!CAUTION]
+> syncing the `out` folder will overwrite local files!
 
-   ```js
-   {'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 32000.0}
-   {'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 128000.0}
-   {'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '8c-32g-amd-rz3700x'}
-   {'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '16c-128g-amd-tr2950x-ssd'}
-   {'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '28c-128g-intel-dual-xeon2680v4-ssd'}
-   {'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 8}
-   {'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 16}
-   {'discriminator': 'SSDHardwareConstraint'}
-   {'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 28}
-   ```
+**List available hardware constraints**
 
-If you run the script without any of the above flags it will print "No action specified. Use --help for usage information."
+```bash
+python poc.py --list-constraints
+```
+
+<details>
+
+<summary>Example output for --list-constraints:</summary>
+
+```js
+{'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 32000.0}
+{'discriminator': 'MinimumRamHardwareConstraint', 'minimumMemoryMB': 128000.0}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '8c-32g-amd-rz3700x'}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '16c-128g-amd-tr2950x-ssd'}
+{'discriminator': 'SpecificHardwareConstraint', 'specificationKey': '28c-128g-intel-dual-xeon2680v4-ssd'}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 8}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 16}
+{'discriminator': 'SSDHardwareConstraint'}
+{'discriminator': 'MinimumCoreHardwareConstraint', 'coreCount': 28}
+```
+
+</details>
