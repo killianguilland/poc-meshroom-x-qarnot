@@ -45,7 +45,8 @@ Here are the available actions (mutually exclusive; only one action is performed
 > [!TIP]
 > If you run the script without any of the following flags, it will print "No action specified. Use --help for usage information.
 
-**Start the photogrammetry task**
+### Start the photogrammetry task
+
 Process a subfolder inside `/in` and write results to `/out`:
 
 ```bash
@@ -58,17 +59,20 @@ Example: process images for the default monstree sample:
 python poc.py --meshroom-task monstree
 ```
 
-**Create a new task with SSH access**
+### Create a task with SSH access
+
 If you set SSH_PUBLIC_KEY, this opens an SSH session into the container so you can run meshroom_batch manually:
 
 ```bash
 python poc.py --ssh
 ```
-> [!TIP]
+> [!NOTE]
 > Be aware that this wont run the photogrammetry task automatically, you have to run meshroom_batch yourself once inside the container.
 
-**Upload pictures / download results**
+### Upload pictures / download results
+
 Sync either the `in` or `out` folder with the remote bucket:
+
 You should run this command before starting a task to upload input data, and after the task is finished to download results.
 
 ```bash
@@ -79,7 +83,7 @@ python poc.py --sync-folder out
 > [!CAUTION]
 > syncing the `out` folder will overwrite local files!
 
-**List available hardware constraints**
+### List available hardware constraints
 
 ```bash
 python poc.py --list-constraints
